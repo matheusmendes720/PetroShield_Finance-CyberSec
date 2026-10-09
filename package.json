@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
+    "dev:setup": "npx prisma generate && npx prisma migrate deploy",
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist",
@@ -12,10 +13,12 @@
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
+    "@prisma/adapter-better-sqlite3": "^7.10.0",
     "@prisma/client": "^7.7.0",
     "@tailwindcss/vite": "^4.1.14",
     "@types/d3": "^7.4.3",
     "@vitejs/plugin-react": "^5.0.4",
+    "better-sqlite3": "^13.0.3",
     "clsx": "^2.1.1",
     "d3": "^7.9.0",
     "dotenv": "^17.2.3",
@@ -37,5 +40,12 @@
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
+  },
+  "allowScripts": {
+    "better-sqlite3@12.11.1": true,
+    "better-sqlite3@13.0.3": true,
+    "esbuild@0.27.7": true,
+    "prisma@7.7.0": true,
+    "@prisma/engines@7.7.0": true
   }
 }

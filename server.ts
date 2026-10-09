@@ -3,11 +3,15 @@ import { createServer as createViteServer } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
 import { PrismaClient } from "@prisma/client";
+import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const prisma = new PrismaClient();
+// Prisma 7 requires an explicit driver adapter. SQLite adapter takes the
+// datasource URL directly; matches `datasource.url` in `prisma.config.ts`.
+const adapter = new PrismaBetterSqlite3({ url: "file:./dev.db" });
+const prisma = new PrismaClient({ adapter });
 
 async function seed() {
   const vendorCount = await prisma.vendor.count();
@@ -58,11 +62,32 @@ async function seed() {
 async function startServer() {
   await seed();
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 3002;
 
   app.use(express.json());
 
   // API routes
+  app.get("/api/health", async (_req, res) => {
+    // CORS: the hub at :3000 fetches this endpoint cross-origin to drive
+    // the live status dot on the Relic Shields landing page.
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    try {
+      const [vendors, devices, logs] = await Promise.all([
+        prisma.vendor.count(),
+        prisma.xrDevice.count(),
+        prisma.promptAuditLog.count(),
+      ]);
+      res.json({
+        status: "ok",
+        db: "ok",
+        counts: { vendors, devices, logs },
+        uptime: process.uptime(),
+      });
+    } catch (e) {
+      res.status(503).json({ status: "error", db: "down", error: String(e) });
+    }
+  });
+
   app.get("/api/stats", async (req, res) => {
     const leaksPrevented = await prisma.promptAuditLog.count({ where: { leakPrevented: true } });
     const criticalThreats = await prisma.promptAuditLog.count({ where: { threatScore: { gt: 0.8 } } });
