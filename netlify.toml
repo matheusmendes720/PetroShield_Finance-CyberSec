@@ -1,0 +1,42 @@
+# Netlify configuration for PetroShield Finance-CyberSec.
+#
+# This deploys the Vite-built SPA (./dist) to a static Netlify site. The
+# Express server (server.ts) is NOT included in this deploy — it requires
+# a Node runtime and a Prisma 7 + better-sqlite3 native build, which
+# Netlify Functions does not provide out of the box. Two deployment
+# options for the backend:
+#
+#   1. Convert server.ts to Netlify Functions. Add ./netlify/functions/,
+#      write one handler per Express route, set BUN_LAUNCHER to "bun run"
+#      or use the official @netlify/plugin-bun if available.
+#   2. Deploy server.ts to a Node host (Render / Fly / Railway) and
+#      set VITE_API_BASE_URL in the hub to point at it.
+#
+# Until one of those is in place, the /api/health and /api/stats routes
+# will 404 on the Netlify-hosted build (the static frontend still works).
+# Locally, `bun run dev` continues to serve both the SPA and the API.
+
+[build]
+  command = "bun run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+  BUN_VERSION = "1.1"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
